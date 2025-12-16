@@ -1,46 +1,22 @@
 # Ensue Memory Network
 
-Persistent memory layer for AI agents. Store, recall, search, and share memories with semantic vector search.
+Persistent memory for AI agents with semantic search.
 
-## Installation
+## Install (Claude Code)
 
-```bash
-# Step 1: Add the marketplace
+```
 /plugin marketplace add https://github.com/mutable-state-inc/ensue-skill
-
-# Step 2: Install the plugin
 /plugin install ensue-memory
-
-# Step 3: Restart Claude Code for changes to take effect
 ```
 
-## Setup
+Restart Claude Code. The skill will guide you through setup.
 
-1. Get an API key from [ensue-network.ai/dashboard](https://www.ensue-network.ai/dashboard)
+## Try it
 
-2. Add the MCP server to Claude Code:
-```bash
-claude mcp add memory-network-ensue https://api.ensue-network.ai/ --header "Authorization: Bearer YOUR_API_KEY"
 ```
-
-## Usage
-
-Once installed, the skill triggers on natural language like:
-
-| You say | What happens |
-|---------|--------------|
-| "Remember that the API key is stored in .env" | Creates a memory |
-| "What was the database schema?" | Searches memories |
-| "Search memories for authentication" | Semantic search |
-| "Update the project notes" | Updates a memory |
-| "List my memory keys" | Lists stored keys |
-| "Share this with the team" | Shares a memory |
-
-## How It Works
-
-The skill uses curl to interact with the Ensue Memory Network API via JSON-RPC. Tools are discovered dynamically, so the skill stays current with server updates.
+"remember my preferred stack is React + Postgres"
+```
 
 ## Links
 
-- Homepage: [ensue.dev](https://ensue.dev)
-- API: [api.ensue-network.ai](https://api.ensue-network.ai)
+[Docs](https://www.ensue-network.ai/docs) · [Dashboard](https://www.ensue-network.ai/dashboard) · [Homepage](https://ensue.dev) · [API](https://api.ensue-network.ai)
