@@ -5,8 +5,13 @@ Persistent memory layer for AI agents. Store, recall, search, and share memories
 ## Installation
 
 ```bash
-claude /plugin marketplace add https://github.com/mutable-state-inc/ensue-skill
-claude /plugin install ensue-memory
+# Step 1: Add the marketplace
+/plugin marketplace add https://github.com/mutable-state-inc/ensue-skill
+
+# Step 2: Install the plugin
+/plugin install ensue-memory
+
+# Step 3: Restart Claude Code for changes to take effect
 ```
 
 ## Setup

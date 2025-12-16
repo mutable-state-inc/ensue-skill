@@ -13,6 +13,7 @@
       "name": "ensue-memory",
       "description": "Persistent memory layer for AI agents. Store, recall, search, and share memories with semantic search. Triggers on 'remember', 'recall', 'search memories', 'update memory', 'share', 'subscribe', 'permissions'.",
       "source": "./",
+      "strict": false,
       "category": "productivity",
       "homepage": "https://ensue.dev",
       "skills": [
