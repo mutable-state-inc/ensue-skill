@@ -56,6 +56,62 @@ curl -X POST https://api.ensue-network.ai/ \
 
 Use the schema from Step 2 to construct correct arguments.
 
+## Batch Operations
+
+When performing multiple operations (e.g., creating several memories, searching multiple keys, or any repetitive task), **write a bash script** instead of executing curl commands one at a time. This is more efficient and reduces latency.
+
+**Example: Creating multiple memories in batch**
+
+```bash
+#!/bin/bash
+API_KEY="$ENSUE_API_KEY"
+API_URL="https://api.ensue-network.ai/"
+
+# Array of memories to create
+declare -a memories=(
+  '{"key":"notes/meeting-jan","value":"Discussed Q1 roadmap"}'
+  '{"key":"notes/meeting-feb","value":"Budget review completed"}'
+  '{"key":"notes/meeting-mar","value":"Launched new feature"}'
+)
+
+for memory in "${memories[@]}"; do
+  key=$(echo "$memory" | jq -r '.key')
+  value=$(echo "$memory" | jq -r '.value')
+
+  curl -s -X POST "$API_URL" \
+    -H "Authorization: Bearer $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"create_memory\",\"arguments\":{\"key\":\"$key\",\"value\":\"$value\"}},\"id\":1}"
+
+  echo "Created: $key"
+done
+```
+
+**Example: Batch search across multiple keys**
+
+```bash
+#!/bin/bash
+API_KEY="$ENSUE_API_KEY"
+API_URL="https://api.ensue-network.ai/"
+
+keys=("notes/meeting-jan" "notes/meeting-feb" "preferences/theme")
+
+for key in "${keys[@]}"; do
+  echo "=== $key ==="
+  curl -s -X POST "$API_URL" \
+    -H "Authorization: Bearer $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"get_memory\",\"arguments\":{\"key\":\"$key\"}},\"id\":1}" | jq '.result'
+done
+```
+
+**When to use batch scripts:**
+- Creating 3+ memories at once
+- Deleting multiple keys
+- Searching across multiple categories
+- Migrating or backing up memories
+- Any repetitive API operation
+
 ## Intent Mapping
 
 | User says | Action |
@@ -65,11 +121,34 @@ Use the schema from Step 2 to construct correct arguments.
 | "what was...", "recall...", "get..." | get_memory or search_memories |
 | "search for...", "find..." | search_memories |
 | "update...", "change..." | update_memory |
-| "delete...", "remove..." | delete_memory |
+| "delete...", "remove..." | delete_memory ⚠️ |
 | "list keys", "show memories" | list_keys |
 | "share with...", "give access..." | share |
+| "revoke access...", "remove user..." | revoke_share ⚠️ |
 | "who can access...", "permissions" | list_permissions |
 | "notify when...", "subscribe..." | subscribe_to_memory |
+
+## ⚠️ Destructive Operations Warning
+
+**Before executing operations marked with ⚠️, warn the user and request confirmation:**
+
+### Delete Operations
+Before calling `delete_memory` (single or batch):
+1. **Show what will be deleted** - List the key(s) and count
+2. **Warn**: "This will permanently delete [N] memories. This cannot be undone."
+3. **Request confirmation**: Wait for user to confirm
+
+Example:
+> ⚠️ Deleting 3 memories: `notes/jan`, `notes/feb`, `notes/mar`. This cannot be undone. Proceed?
+
+### Revoking User Access
+Before calling `revoke_share`:
+1. **Show who will lose access**: List affected user(s)
+2. **Warn about impact**: "This will immediately revoke access for [user(s)]"
+3. **Request confirmation**
+
+Example:
+> ⚠️ Revoking access for `alice@example.com` to `project/secrets`. They will immediately lose access. Proceed?
 
 ## Key Naming
 
