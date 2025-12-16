@@ -7,25 +7,26 @@ description: Persistent memory layer for AI agents via Ensue Memory Network API.
 
 Dynamic memory service accessed via curl for fast CLI execution.
 
-## Authentication
+## Initialization (REQUIRED FIRST)
 
-All API calls require Bearer token authentication:
+**Before doing anything else**, check for API key:
 
-```bash
-curl -X POST https://api.ensue-network.ai/ \
-  -H "Authorization: Bearer <API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '<JSON-RPC payload>'
-```
-
-**Get your API key from the MCP config:**
 ```bash
 claude mcp get memory-network-ensue
 ```
 
+If this returns a Bearer token in the headers, extract it and proceed.
+
+If not configured, notify the user:
+> "Ensue Memory Network is not configured. To set up:
+> 1. Get an API key from https://ensue.dev
+> 2. Run: `claude mcp add memory-network-ensue https://api.ensue-network.ai/ --header \"Authorization: Bearer YOUR_API_KEY\"`"
+
+**Do not proceed until API key is available.**
+
 ## Tool Discovery
 
-Before using any tool, discover available tools and their schemas:
+After confirming API key, discover available tools:
 
 ```bash
 curl -X POST https://api.ensue-network.ai/ \
