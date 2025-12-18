@@ -17,28 +17,43 @@ Dynamic memory service accessed via curl.
 
 **ONLY use curl** as described below. This ensures consistent behavior and dynamic schema discovery.
 
+## Security: API Key Handling
+
+**CRITICAL: Never expose the API key in the session.**
+
+- **NEVER** use `echo $ENSUE_API_KEY` or any command that prints the key
+- **NEVER** accept the API key inline from the user in the conversation
+- **NEVER** interpolate the key into commands in a way that could be logged
+- **ALWAYS** require the key to be set as an environment variable before proceeding
+
 ## Execution Order (MUST FOLLOW)
 
-**Step 1: Get API key**
+**Step 1: Verify API key is set**
 
-Check for the `ENSUE_API_KEY` environment variable:
+Check if `ENSUE_API_KEY` is set WITHOUT revealing its value:
 
 ```bash
-echo $ENSUE_API_KEY
+[ -z "$ENSUE_API_KEY" ] && echo "ENSUE_API_KEY is not set" || echo "ENSUE_API_KEY is set"
 ```
 
-If empty or not set, ask the user to provide their API key or set the environment variable:
-> "I need your Ensue API key to continue. You can either:
-> 1. Provide it now, or
-> 2. Set the environment variable: `export ENSUE_API_KEY=your_key`
+If not set, tell the user:
+> "The `ENSUE_API_KEY` environment variable is not set. Please set it before continuing:
 >
-> Get an API key from https://www.ensue-network.ai/dashboard"
+> ```bash
+> export ENSUE_API_KEY=your_key
+> ```
+>
+> Get an API key from https://www.ensue-network.ai/dashboard
+>
+> For security, I cannot accept the API key directly in this conversation."
+
+**Do not proceed until the environment variable is confirmed set.**
 
 **Step 2: List available tools (REQUIRED before any tool call)**
 
 ```bash
-curl -X POST https://api.ensue-network.ai/ \
-  -H "Authorization: Bearer <API_KEY>" \
+curl -s -X POST https://api.ensue-network.ai/ \
+  -H "Authorization: Bearer $ENSUE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 ```
@@ -48,8 +63,8 @@ This returns tool names, descriptions, and input schemas. **Never skip this step
 **Step 3: Call the appropriate tool**
 
 ```bash
-curl -X POST https://api.ensue-network.ai/ \
-  -H "Authorization: Bearer <API_KEY>" \
+curl -s -X POST https://api.ensue-network.ai/ \
+  -H "Authorization: Bearer $ENSUE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"<tool_name>","arguments":{<args>}},"id":1}'
 ```
@@ -64,7 +79,9 @@ When performing multiple operations (e.g., creating several memories, searching 
 
 ```bash
 #!/bin/bash
-API_KEY="$ENSUE_API_KEY"
+# ENSUE_API_KEY must be set in the environment - never echo or log it
+[ -z "$ENSUE_API_KEY" ] && { echo "Error: ENSUE_API_KEY not set"; exit 1; }
+
 API_URL="https://api.ensue-network.ai/"
 
 # Array of memories to create
@@ -79,7 +96,7 @@ for memory in "${memories[@]}"; do
   value=$(echo "$memory" | jq -r '.value')
 
   curl -s -X POST "$API_URL" \
-    -H "Authorization: Bearer $API_KEY" \
+    -H "Authorization: Bearer $ENSUE_API_KEY" \
     -H "Content-Type: application/json" \
     -d "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"create_memory\",\"arguments\":{\"key\":\"$key\",\"value\":\"$value\"}},\"id\":1}"
 
@@ -91,15 +108,16 @@ done
 
 ```bash
 #!/bin/bash
-API_KEY="$ENSUE_API_KEY"
-API_URL="https://api.ensue-network.ai/"
+# ENSUE_API_KEY must be set in the environment - never echo or log it
+[ -z "$ENSUE_API_KEY" ] && { echo "Error: ENSUE_API_KEY not set"; exit 1; }
 
+API_URL="https://api.ensue-network.ai/"
 keys=("notes/meeting-jan" "notes/meeting-feb" "preferences/theme")
 
 for key in "${keys[@]}"; do
   echo "=== $key ==="
   curl -s -X POST "$API_URL" \
-    -H "Authorization: Bearer $API_KEY" \
+    -H "Authorization: Bearer $ENSUE_API_KEY" \
     -H "Content-Type: application/json" \
     -d "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"get_memory\",\"arguments\":{\"key\":\"$key\"}},\"id\":1}" | jq '.result'
 done
@@ -112,17 +130,55 @@ done
 - Migrating or backing up memories
 - Any repetitive API operation
 
+## Context Optimization
+
+**CRITICAL: Minimize context window usage.** Users may have 100k+ keys. Never dump large lists into the conversation.
+
+### When users ask "what's on Ensue" / "show my memories" / "list keys"
+
+**Do NOT** call `list_keys` with a large limit. Instead:
+
+1. **Get a count first** using `list_keys` with `limit: 1`:
+   ```bash
+   curl -s -X POST https://api.ensue-network.ai/ \
+     -H "Authorization: Bearer $ENSUE_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"list_keys","arguments":{"limit":1}},"id":1}'
+   ```
+   The response includes a `count` field with the total number of keys.
+
+2. **Report the count and ask what they're looking for:**
+   > "You have [N] memories stored. What would you like to find? I can search by topic or meaning."
+
+3. **Use `discover_memories`** for semantic search instead of listing:
+   ```bash
+   curl -s -X POST https://api.ensue-network.ai/ \
+     -H "Authorization: Bearer $ENSUE_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"discover_memories","arguments":{"query":"<user intent>","limit":10}},"id":1}'
+   ```
+
+4. **Only list keys with small limits** (5-10) when the user explicitly needs to browse, and paginate if needed.
+
+### Prefer semantic search over listing
+
+| Instead of... | Do this... |
+|---------------|------------|
+| `list_keys` with limit 100 | `discover_memories` with relevant query |
+| Showing all keys | Report count, ask what they need |
+| Paginating through everything | Search for what's relevant |
+
 ## Intent Mapping
 
 | User says | Action |
 |-----------|--------|
 | "what can I do", "capabilities", "help" | Steps 1-2 only (summarize tools/list response) |
 | "remember...", "save...", "store..." | create_memory |
-| "what was...", "recall...", "get..." | get_memory or search_memories |
-| "search for...", "find..." | search_memories |
+| "what was...", "recall...", "get..." | get_memory or discover_memories |
+| "search for...", "find..." | discover_memories or search_memories |
 | "update...", "change..." | update_memory |
 | "delete...", "remove..." | delete_memory ⚠️ |
-| "list keys", "show memories" | list_keys |
+| "list keys", "show memories", "what's on ensue" | Count first, then ask intent (see Context Optimization) |
 | "share with...", "give access..." | share |
 | "revoke access...", "remove user..." | revoke_share ⚠️ |
 | "who can access...", "permissions" | list_permissions |
