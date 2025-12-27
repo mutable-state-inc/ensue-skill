@@ -15,8 +15,8 @@ echo "ready" > /tmp/ensue-status
 
 # On fresh startup
 if [ "$SOURCE" = "startup" ]; then
-  # Brand message (JSON format for visible output)
-  echo '{"systemMessage": "\n    ミ★  ✧ · ✦      ✦ · ✧  ☆彡\n      ·˚ ✦ ✧ ensue memory network ✧ ✦ ˚·\n    ☆彡  ✦ · ✧      ✧ · ✦  ミ★\n"}'
+  # Welcome message (JSON format for visible output)
+  echo '{"systemMessage": "\n    ✧ · ✦ · ✧\n    memories persist. brilliance will ensue.\n    ✧ · ✦ · ✧\n"}'
   # Create session header (background)
   curl -s -X POST https://api.ensue-network.ai/ \
     -H "Authorization: Bearer $ENSUE_API_KEY" \
