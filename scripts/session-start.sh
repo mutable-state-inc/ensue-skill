@@ -15,7 +15,7 @@ fi
 if [ "$ENSUE_READONLY" = "true" ] || [ "$ENSUE_READONLY" = "1" ]; then
   echo "readonly" > /tmp/ensue-status-${SESSION_ID}
   if [ "$SOURCE" = "startup" ]; then
-    echo '{"systemMessage": "\n\u001b[38;2;121;192;255m    ミ★  ✧ · ✦    ✦ · ✧  ☆彡\n        memories persist.\n        brilliance will 𝗲𝗻𝘀𝘂𝗲.\n    ☆彡  ✧ · ✦    ✦ · ✧  ミ★\u001b[0m\n\n    📖  read-only mode (ENSUE_READONLY=true)\n"}'
+    echo '{"systemMessage": "\n\u001b[38;2;121;192;255m    ミ★  ✧ · ✦    ✦ · ✧  ☆彡\u001b[0m\n\u001b[38;2;136;136;136m        memories persist.\n        brilliance will \u001b[38;2;121;192;255m𝗲𝗻𝘀𝘂𝗲\u001b[38;2;136;136;136m.\u001b[0m\n\u001b[38;2;121;192;255m    ☆彡  ✧ · ✦    ✦ · ✧  ミ★\u001b[0m\n\n    📖  read-only mode (ENSUE_READONLY=true)\n"}'
   fi
   exit 0
 fi
@@ -35,11 +35,11 @@ if [ "$SOURCE" = "startup" ]; then
   if [ "$HAS_ERROR" != "false" ] && [ "$HAS_ERROR" != "null" ] && [ -n "$HAS_ERROR" ]; then
     # Permission denied or other error - go into read-only mode
     echo "readonly" > /tmp/ensue-status-${SESSION_ID}
-    echo '{"systemMessage": "\n\u001b[38;2;121;192;255m    ミ★  ✧ · ✦    ✦ · ✧  ☆彡\n        memories persist.\n        brilliance will 𝗲𝗻𝘀𝘂𝗲.\n    ☆彡  ✧ · ✦    ✦ · ✧  ミ★\u001b[0m\n\n    ⚠️  read-only mode: no write permission to sessions/\n"}'
+    echo '{"systemMessage": "\n\u001b[38;2;121;192;255m    ミ★  ✧ · ✦    ✦ · ✧  ☆彡\u001b[0m\n\u001b[38;2;136;136;136m        memories persist.\n        brilliance will \u001b[38;2;121;192;255m𝗲𝗻𝘀𝘂𝗲\u001b[38;2;136;136;136m.\u001b[0m\n\u001b[38;2;121;192;255m    ☆彡  ✧ · ✦    ✦ · ✧  ミ★\u001b[0m\n\n    ⚠️  read-only mode: no write permission to sessions/\n"}'
   else
     # All good - ready for full operation
     echo "ready" > /tmp/ensue-status-${SESSION_ID}
-    echo '{"systemMessage": "\n\u001b[38;2;121;192;255m    ミ★  ✧ · ✦    ✦ · ✧  ☆彡\n        memories persist.\n        brilliance will 𝗲𝗻𝘀𝘂𝗲.\n    ☆彡  ✧ · ✦    ✦ · ✧  ミ★\u001b[0m\n"}'
+    echo '{"systemMessage": "\n\u001b[38;2;121;192;255m    ミ★  ✧ · ✦    ✦ · ✧  ☆彡\u001b[0m\n\u001b[38;2;136;136;136m        memories persist.\n        brilliance will \u001b[38;2;121;192;255m𝗲𝗻𝘀𝘂𝗲\u001b[38;2;136;136;136m.\u001b[0m\n\u001b[38;2;121;192;255m    ☆彡  ✧ · ✦    ✦ · ✧  ミ★\u001b[0m\n"}'
   fi
 
   # Cache tools list (background)
