@@ -10,6 +10,11 @@ USER_PROMPT=$(echo "$INPUT" | jq -r '.prompt // empty')
 [ -z "$ENSUE_API_KEY" ] && exit 0
 [ -z "$USER_PROMPT" ] && exit 0
 
+# Check if in read-only mode
+STATUS=$(cat /tmp/ensue-status-${SESSION_ID} 2>/dev/null)
+[ "$STATUS" = "readonly" ] && exit 0
+[ "$STATUS" = "not set" ] && exit 0
+
 BATCH_FILE="/tmp/ensue-batch-${SESSION_ID}.jsonl"
 BATCH_THRESHOLD=10
 
