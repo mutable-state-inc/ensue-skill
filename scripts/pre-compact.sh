@@ -21,11 +21,15 @@ COMPACT_NUM=$(cat /tmp/ensue-compact-${SESSION_ID} 2>/dev/null || echo "0")
 COMPACT_NUM=$((COMPACT_NUM + 1))
 echo "$COMPACT_NUM" > /tmp/ensue-compact-${SESSION_ID}
 
-# Trigger hypergraph
+# Trigger namespace hypergraph with semantic query for big ideas
+NAMESPACE="sessions/${SESSION_ID}/"
+OUTPUT_KEY="sessions/${SESSION_ID}/compact/${COMPACT_NUM}"
+QUERY="key decisions, important realizations, problem-solving approaches, architectural choices, conceptual breakthroughs, reasoning patterns, and significant conclusions from this conversation segment"
+
 RESPONSE=$(curl -s -X POST https://api.ensue-network.ai/ \
   -H "Authorization: Bearer $ENSUE_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"build_hypergraph\",\"arguments\":{\"query\":\"session $SESSION_ID\",\"limit\":30,\"output_key\":\"sessions/${SESSION_ID}/compact/${COMPACT_NUM}\"}},\"id\":1}" 2>&1)
+  -d "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\"build_namespace_hypergraph\",\"arguments\":{\"namespace_path\":\"${NAMESPACE}\",\"query\":\"${QUERY}\",\"output_key\":\"${OUTPUT_KEY}\",\"limit\":50}},\"id\":1}" 2>&1)
 
 # Check for errors (strip SSE "data: " prefix if present)
 JSON_RESPONSE=$(echo "$RESPONSE" | sed 's/^data: //')
