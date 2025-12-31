@@ -8,6 +8,13 @@ BATCH_FILE="/tmp/ensue-batch-${SESSION_ID}.jsonl"
 [ ! -f "$BATCH_FILE" ] && exit 0
 [ ! -s "$BATCH_FILE" ] && exit 0
 
+# Defense in depth: check readonly even though callers should check
+[ "$ENSUE_READONLY" = "true" ] || [ "$ENSUE_READONLY" = "1" ] && exit 0
+STATUS=$(cat /tmp/ensue-status-${SESSION_ID} 2>/dev/null)
+[ -z "$STATUS" ] && exit 0
+[ "$STATUS" = "readonly" ] && exit 0
+[ "$STATUS" = "not set" ] && exit 0
+
 # Get current batch number
 BATCH_NUM=$(cat /tmp/ensue-batchnum-${SESSION_ID} 2>/dev/null || echo "0")
 BATCH_NUM=$((BATCH_NUM + 1))
