@@ -15,10 +15,7 @@
       "source": "./",
       "strict": false,
       "category": "productivity",
-      "homepage": "https://ensue.dev",
-      "skills": [
-        "./skills/ensue-memory"
-      ]
+      "homepage": "https://ensue.dev"
     }
   ]
 }
