@@ -111,16 +111,35 @@ Uses `$ENSUE_API_KEY` env var. If missing, user gets one at https://www.ensue-ne
 
 ## API Call
 
+Use the wrapper script for all API calls. It handles authentication and SSE response parsing:
+
 ```bash
-curl -s -X POST https://api.ensue-network.ai/ \
-  -H "Authorization: Bearer $ENSUE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"<tool_name>","arguments":{<args>}},"id":1}'
+./scripts/ensue-api.sh <method> '<json_args>'
 ```
 
 ## Batch Operations
 
-For 3+ similar operations, use a bash loop instead of individual commands. Keep it simple.
+These methods support native batching (1-100 items per call):
+
+**create_memory** - batch create with `items` array:
+```bash
+./scripts/ensue-api.sh create_memory '{"items":[
+  {"key_name":"ns/key1","value":"content1","embed":true},
+  {"key_name":"ns/key2","value":"content2","embed":true}
+]}'
+```
+
+**get_memory** - batch read with `keys` array:
+```bash
+./scripts/ensue-api.sh get_memory '{"keys":["ns/key1","ns/key2","ns/key3"]}'
+```
+
+**delete_memory** - batch delete with `keys` array:
+```bash
+./scripts/ensue-api.sh delete_memory '{"keys":["ns/key1","ns/key2"]}'
+```
+
+Use batch calls whenever possible to minimize API roundtrips and save tokens.
 
 ## Context Optimization
 

@@ -11,6 +11,18 @@ if [ -z "$ENSUE_API_KEY" ]; then
   exit 0
 fi
 
+# Persist env vars for subagents (so they can use the ensue-memory skill)
+if [ -n "$CLAUDE_ENV_FILE" ]; then
+  echo "export ENSUE_API_KEY=\"$ENSUE_API_KEY\"" >> "$CLAUDE_ENV_FILE"
+  [ -n "$ENSUE_READONLY" ] && echo "export ENSUE_READONLY=\"$ENSUE_READONLY\"" >> "$CLAUDE_ENV_FILE"
+fi
+
+# Also write to a temp file for wrapper script (fallback for subagents)
+# Use plugin directory to avoid polluting global namespace
+ENSUE_KEY_FILE="${CLAUDE_PLUGIN_ROOT:-.}/.ensue-key"
+echo "$ENSUE_API_KEY" > "$ENSUE_KEY_FILE"
+chmod 600 "$ENSUE_KEY_FILE"
+
 # Check if user wants read-only mode (no auto-logging)
 if [ "$ENSUE_READONLY" = "true" ] || [ "$ENSUE_READONLY" = "1" ]; then
   echo "readonly" > /tmp/ensue-status-${SESSION_ID}

@@ -1,0 +1,11 @@
+{
+  "name": "ensue-memory",
+  "description": "Persistent memory layer for AI agents via Ensue Memory Network",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ensue",
+    "email": "founders@ensue.dev"
+  },
+  "agents": ["./agents/research-learner.md"],
+  "skills": ["./skills/ensue-memory"]
+}
