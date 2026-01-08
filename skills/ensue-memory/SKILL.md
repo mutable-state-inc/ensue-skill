@@ -129,14 +129,14 @@ These methods support native batching (1-100 items per call):
 ]}'
 ```
 
-**get_memory** - batch read with `keys` array:
+**get_memory** - batch read with `key_names` array:
 ```bash
-./scripts/ensue-api.sh get_memory '{"keys":["ns/key1","ns/key2","ns/key3"]}'
+./scripts/ensue-api.sh get_memory '{"key_names":["ns/key1","ns/key2","ns/key3"]}'
 ```
 
-**delete_memory** - batch delete with `keys` array:
+**delete_memory** - batch delete with `key_names` array:
 ```bash
-./scripts/ensue-api.sh delete_memory '{"keys":["ns/key1","ns/key2"]}'
+./scripts/ensue-api.sh delete_memory '{"key_names":["ns/key1","ns/key2"]}'
 ```
 
 Use batch calls whenever possible to minimize API roundtrips and save tokens.
