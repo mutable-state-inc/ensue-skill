@@ -1,2 +1,4 @@
 .ensue-key
 ensue-memory.zip
+scripts/pipx.pyz
+scripts/.pipx/

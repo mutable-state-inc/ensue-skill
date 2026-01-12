@@ -111,10 +111,15 @@ Uses `$ENSUE_API_KEY` env var. If missing, user gets one at https://www.ensue-ne
 
 ## API Call
 
-Use the wrapper script for all API calls. Set as executable before use. It handles authentication and SSE response parsing:
+Use the wrapper CLI for all API calls. Set as executable before use. You can use `--help` for each command to get more details about how to use the CLI.  The CLI handles authentication and response parsing:
 
 ```bash
-./scripts/ensue-api.sh <method> '<json_args>'
+./scripts/ensue-cli.py <command> '<json_args>'
+```
+
+Example:
+```bash
+./scripts/ensue-cli.py list_keys '{"limit":5}'
 ```
 
 ## Batch Operations
@@ -123,21 +128,38 @@ These methods support native batching (1-100 items per call):
 
 **create_memory** - batch create with `items` array:
 ```bash
-./scripts/ensue-api.sh create_memory '{"items":[
-  {"key_name":"ns/key1","value":"content1","embed":true},
-  {"key_name":"ns/key2","value":"content2","embed":true}
-]}'
+./scripts/ensue-cli.py create_memory "$(cat <<'EOF'
+{
+  "items": [
+    {"key_name": "ns/key1", "value": "content1", "embed": true},
+    {"key_name": "ns/key2", "value": "content2", "embed": true}
+  ]
+}
+EOF
+)"
 ```
 
 **get_memory** - batch read with `key_names` array:
 ```bash
-./scripts/ensue-api.sh get_memory '{"key_names":["ns/key1","ns/key2","ns/key3"]}'
+./scripts/ensue-cli.py get_memory "$(cat <<'EOF'
+{
+  "key_names": ["ns/key1", "ns/key2", "ns/key3"]
+}
+EOF
+)"
 ```
 
 **delete_memory** - batch delete with `key_names` array:
 ```bash
-./scripts/ensue-api.sh delete_memory '{"key_names":["ns/key1","ns/key2"]}'
+./scripts/ensue-cli.py delete_memory "$(cat <<'EOF'
+{
+  "key_names": ["ns/key1", "ns/key2"]
+}
+EOF
+)"
 ```
+
+**Tip:** Using HEREDOC syntax (`<<'EOF' ... EOF`) helps avoid shell escaping issues with complex JSON, especially when values contain quotes, newlines, or special characters.
 
 Use batch calls whenever possible to minimize API roundtrips and save tokens.
 
