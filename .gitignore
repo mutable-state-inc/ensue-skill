@@ -1,1 +1,3 @@
 .ensue-key
+scripts/pipx.pyz
+scripts/.pipx/
