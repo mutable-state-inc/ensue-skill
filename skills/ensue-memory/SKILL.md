@@ -111,7 +111,7 @@ Uses `$ENSUE_API_KEY` env var. If missing, user gets one at https://www.ensue-ne
 
 ## API Call
 
-Use the wrapper script for all API calls. It handles authentication and SSE response parsing:
+Use the wrapper script for all API calls. Set as executable before use. It handles authentication and SSE response parsing:
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/scripts/ensue-api.sh <method> '<json_args>'
@@ -129,12 +129,12 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/ensue-api.sh create_memory '{"items":[
 ]}'
 ```
 
-**get_memory** - batch read with `keys` array:
+**get_memory** - batch read with `key_names` array:
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/scripts/ensue-api.sh get_memory '{"keys":["ns/key1","ns/key2","ns/key3"]}'
 ```
 
-**delete_memory** - batch delete with `keys` array:
+**delete_memory** - batch delete with `key_names` array:
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/scripts/ensue-api.sh delete_memory '{"keys":["ns/key1","ns/key2"]}'
 ```
@@ -147,7 +147,7 @@ Use batch calls whenever possible to minimize API roundtrips and save tokens.
 
 ### Explicit vs Vague Requests
 
-**Explicit listing requests** → Execute directly with `list_keys` (limit 5):
+**Explicit listing requests** → Execute directly with `list_keys '{"limit": 5}'` (limit 5):
 - "list recent" / "list keys" / "show recent keys" / "list my memories"
 - User knows what they want - don't make them clarify
 - After displaying results, mention: "Ask for more if you'd like to see additional keys"
