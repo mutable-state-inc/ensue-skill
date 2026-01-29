@@ -145,12 +145,15 @@ def get_config():
         # Try reading from .ensue-key file (fallback for subagents)
         script_dir = Path(__file__).parent
         repo_root = script_dir.parent
-        key_file = repo_root / ".claude-plugin" / ".ensue-key"
-        if key_file.exists():
-            token = key_file.read_text().strip()
+        plugin_key_file = repo_root / ".claude-plugin" / ".ensue-key"
+        skill_key_file = repo_root / ".ensue-key"
+        if plugin_key_file.exists():
+            token = plugin_key_file.read_text().strip()
+        if skill_key_file.exists():
+            token = skil_key_file.read_text().strip()
 
     if not token:
-        print(json.dumps({"error": "ENSUE_API_KEY or ENSUE_TOKEN not set"}), file=sys.stderr)
+        print(json.dumps({"error": f"ENSUE_API_KEY or ENSUE_TOKEN env var not set, and {plugin_key_file} and {skill_key_file}"}), file=sys.stderr)
         sys.exit(1)
 
     return url, token
