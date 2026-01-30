@@ -3,6 +3,8 @@
 # requires-python = ">=3.9"
 # dependencies = [
 #   "mcp>=1.0",
+#   "click",
+#   "rich",
 # ]
 # ///
 """
@@ -11,10 +13,7 @@ Ensue CLI - Command line interface for the Ensue Memory Network.
 This self-contained script uses PEP 723 inline metadata for dependency management.
 It auto-installs pipx if missing and uses it to manage dependencies.
 
-Run: ./ensue-cli.py <command> '<json_args>'
-
-Example:
-    ./ensue-cli.py list_keys '{"limit":5}'
+Run: ./ensue-cli.py --help
 """
 
 import os
@@ -86,17 +85,25 @@ if not os.environ.get("PIPX_RUNNING"):
 # ============================================================================
 
 import asyncio
+import concurrent.futures
 import json
 from contextlib import asynccontextmanager
 from typing import Any
 
+import click
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
+from rich.console import Console
+from rich.json import JSON
 
+console = Console()
 
 # ============================================================================
-# MCP Client (embedded from ensue-cli/ensue_cli/client.py)
+# MCP Client
 # ============================================================================
+
+DEFAULT_URL = "https://api.ensue-network.ai/"
+
 
 @asynccontextmanager
 async def create_session(url: str, token: str):
@@ -130,14 +137,23 @@ async def call_tool(url: str, token: str, name: str, arguments: dict[str, Any]) 
 
 
 # ============================================================================
-# CLI Implementation
+# CLI Helpers
 # ============================================================================
 
-DEFAULT_URL = "https://api.ensue-network.ai/"
+
+def run_async(coro):
+    """Run async coroutine, handling nested event loops."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    # If there's already a running loop, create a new one in a thread
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        return pool.submit(asyncio.run, coro).result()
 
 
 def get_config():
-    """Get API configuration from environment."""
+    """Get API configuration from environment, with .ensue-key fallback."""
     url = os.environ.get("ENSUE_URL", DEFAULT_URL)
     token = os.environ.get("ENSUE_API_KEY") or os.environ.get("ENSUE_TOKEN")
 
@@ -150,75 +166,120 @@ def get_config():
         if plugin_key_file.exists():
             token = plugin_key_file.read_text().strip()
         if skill_key_file.exists():
-            token = skil_key_file.read_text().strip()
+            token = skill_key_file.read_text().strip()
 
     if not token:
-        print(json.dumps({"error": f"ENSUE_API_KEY or ENSUE_TOKEN env var not set, and {plugin_key_file} and {skill_key_file}"}), file=sys.stderr)
+        console.print("[red]Error:[/red] ENSUE_API_KEY or ENSUE_TOKEN environment variable required, "
+                       "or place key in .ensue-key file")
         sys.exit(1)
 
     return url, token
 
 
-def format_result(result):
-    """Format MCP result as JSON string for output."""
+def print_result(result):
+    """Print MCP result with rich JSON formatting."""
     if hasattr(result, "content"):
-        # MCP response object - extract text content
         for item in result.content:
             if hasattr(item, "text"):
-                # Return the text content (should be JSON from server)
-                return item.text
-    # Fallback to JSON serialization
-    return json.dumps(result, default=str)
+                try:
+                    console.print(JSON(item.text))
+                except Exception:
+                    console.print(item.text)
+    else:
+        console.print(JSON(json.dumps(result, indent=2)))
 
 
-async def main_async():
-    """Main async entry point."""
-    if len(sys.argv) < 2:
-        print(json.dumps({
-            "error": "Usage: ensue-cli.py <command> [json_args]",
-            "example": "./ensue-cli.py list_keys '{\"limit\":5}'"
-        }), file=sys.stderr)
-        sys.exit(1)
+# ============================================================================
+# Dynamic Click CLI
+# ============================================================================
 
-    command = sys.argv[1]
-    args_str = sys.argv[2] if len(sys.argv) > 2 else "{}"
+TYPE_MAP = {
+    "integer": click.INT,
+    "number": click.FLOAT,
+    "boolean": click.BOOL,
+}
 
-    # Parse JSON arguments
-    try:
-        arguments = json.loads(args_str)
-    except json.JSONDecodeError as e:
-        print(json.dumps({
-            "error": f"Invalid JSON arguments: {e}",
-            "received": args_str
-        }), file=sys.stderr)
-        sys.exit(1)
 
-    # Get configuration
-    try:
+def parse_arg(value, schema_type):
+    """Parse a CLI argument, handling JSON for complex types."""
+    if schema_type in ("array", "object") and isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            pass
+    return value
+
+
+def build_command(tool):
+    """Build a Click command from an MCP tool definition."""
+    schema = tool.get("inputSchema", {})
+    props = schema.get("properties", {})
+    required = set(schema.get("required", []))
+
+    params = [
+        click.Option(
+            [f"--{name.replace('_', '-')}"],
+            type=TYPE_MAP.get(p.get("type"), click.STRING),
+            required=name in required,
+            help=p.get("description", ""),
+        )
+        for name, p in props.items()
+    ]
+
+    def callback(**kwargs):
         url, token = get_config()
-    except SystemExit:
-        raise
-    except Exception as e:
-        print(json.dumps({"error": f"Configuration error: {e}"}), file=sys.stderr)
-        sys.exit(1)
+        args = {
+            k.replace("-", "_"): parse_arg(v, props.get(k.replace("-", "_"), {}).get("type"))
+            for k, v in kwargs.items()
+            if v is not None
+        }
+        result = run_async(call_tool(url, token, tool["name"], args))
+        print_result(result)
 
-    # Call the tool
-    try:
-        result = await call_tool(url, token, command, arguments)
-        output = format_result(result)
-        print(output)
-    except Exception as e:
-        print(json.dumps({
-            "error": str(e),
-            "command": command,
-            "arguments": arguments
-        }), file=sys.stderr)
-        sys.exit(1)
+    return click.Command(
+        name=tool["name"],
+        callback=callback,
+        params=params,
+        help=tool.get("description", ""),
+    )
 
 
+class MCPToolsCLI(click.Group):
+    """CLI that loads commands dynamically from MCP server."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._tools = None
+
+    @property
+    def tools(self):
+        if self._tools is None:
+            url, token = get_config()
+            self._tools = {t["name"]: t for t in run_async(list_tools(url, token))}
+        return self._tools
+
+    def list_commands(self, ctx):
+        try:
+            return sorted(self.tools.keys())
+        except Exception as e:
+            console.print("[red]Connection error:[/red] Could not connect to MCP server")
+            console.print(f"[dim]{e}[/dim]")
+            return []
+
+    def get_command(self, ctx, name):
+        if name not in self.tools:
+            return None
+        return build_command(self.tools[name])
+
+
+@click.group(cls=MCPToolsCLI)
+@click.version_option()
 def main():
-    """Main entry point."""
-    asyncio.run(main_async())
+    """Ensue Memory CLI - A distributed memory network for AI agents.
+
+    Commands are loaded dynamically from the MCP server.
+    Set ENSUE_API_KEY or save a file to .ensue-key that contains just the key to authenticate.
+    """
 
 
 if __name__ == "__main__":

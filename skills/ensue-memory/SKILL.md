@@ -113,22 +113,25 @@ Uses `$ENSUE_API_KEY` env var. If missing, user gets one at https://www.ensue-ne
 
 Use the wrapper CLI for all API calls. Set as executable before use. You can use `--help` for each command to get more details about how to use the CLI.  The CLI handles authentication and response parsing:
 
+
 ```bash
-./scripts/ensue-cli.py <command> '<json_args>'
+${CLAUDE_PLUGIN_ROOT:-.}/scripts/ensue-cli.py <method> '<json_args>'
 ```
 
 Example:
 ```bash
-./scripts/ensue-cli.py list_keys '{"limit":5}'
+${CLAUDE_PLUGIN_ROOT:-.}/scripts/ensue-cli.py list_keys '{"limit":5}'
 ```
 
 ## Batch Operations
 
-These methods support native batching (1-100 items per call):
+`create_memory`, `get_memory`, and `delete_memory` all support native batching (1-100 items per call). Use batch calls whenever possible to minimize API roundtrips and save tokens.
 
-**create_memory** - batch create with `items` array:
+**Tip:** Using HEREDOC syntax (`<<'EOF' ... EOF`) helps avoid shell escaping issues with complex JSON, especially when values contain quotes, newlines, or special characters.
+
+For example:
 ```bash
-./scripts/ensue-cli.py create_memory "$(cat <<'EOF'
+${CLAUDE_PLUGIN_ROOT:-.}/scripts/ensue-cli.py create_memory "$(cat <<'EOF'
 {
   "items": [
     {"key_name": "ns/key1", "value": "content1", "embed": true},
@@ -136,32 +139,7 @@ These methods support native batching (1-100 items per call):
   ]
 }
 EOF
-)"
 ```
-
-**get_memory** - batch read with `key_names` array:
-```bash
-./scripts/ensue-cli.py get_memory "$(cat <<'EOF'
-{
-  "key_names": ["ns/key1", "ns/key2", "ns/key3"]
-}
-EOF
-)"
-```
-
-**delete_memory** - batch delete with `key_names` array:
-```bash
-./scripts/ensue-cli.py delete_memory "$(cat <<'EOF'
-{
-  "key_names": ["ns/key1", "ns/key2"]
-}
-EOF
-)"
-```
-
-**Tip:** Using HEREDOC syntax (`<<'EOF' ... EOF`) helps avoid shell escaping issues with complex JSON, especially when values contain quotes, newlines, or special characters.
-
-Use batch calls whenever possible to minimize API roundtrips and save tokens.
 
 ## Context Optimization
 
