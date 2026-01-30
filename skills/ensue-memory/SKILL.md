@@ -101,7 +101,7 @@ Each memory should be:
 
 ## Setup
 
-Uses `$ENSUE_API_KEY` env var. If missing, user gets one at https://www.ensue-network.ai/dashboard
+Uses `$ENSUE_API_KEY` env var or .ensue-key file. If missing, user gets a key at https://www.ensue-network.ai/dashboard
 
 ## Security
 
@@ -109,37 +109,35 @@ Uses `$ENSUE_API_KEY` env var. If missing, user gets one at https://www.ensue-ne
 - **NEVER** accept the key inline from the user
 - **NEVER** interpolate the key in a way that exposes it
 
-## API Call
+## Interacting with the memory system
 
-Use the wrapper script for all API calls. Set as executable before use. It handles authentication and SSE response parsing:
+Use the CLI to interact with the memory system. Set as executable before use. You can use `--help` to discover commands and usage for each command to get more details about how to use the CLI.  The CLI handles authentication and response parsing:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/ensue-api.sh <method> '<json_args>'
+${CLAUDE_PLUGIN_ROOT:-.}/scripts/ensue-cli.py <method> '<json_args>'
+```
+
+Example:
+```bash
+${CLAUDE_PLUGIN_ROOT:-.}/scripts/ensue-cli.py list_keys '{"limit":5}'
 ```
 
 ## Batch Operations
 
-These methods support native batching (1-100 items per call):
+`create_memory`, `get_memory`, and `delete_memory` all support native batching (1-100 items per call). Use batch calls whenever possible to minimize API roundtrips and save tokens.
 
-**create_memory** - batch create with `items` array:
+**Tip:** Using HEREDOC syntax (`<<'EOF' ... EOF`) helps avoid shell escaping issues with complex JSON, especially when values contain quotes, newlines, or special characters.
+
+For example:
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/ensue-api.sh create_memory '{"items":[
-  {"key_name":"ns/key1","value":"content1","embed":true},
-  {"key_name":"ns/key2","value":"content2","embed":true}
-]}'
+${CLAUDE_PLUGIN_ROOT:-.}/scripts/ensue-cli.py create_memory --items "$(cat <<'EOF'
+[
+  {"key_name": "ns/key1", "value": "content1", "description": "First item", "embed": true},
+  {"key_name": "ns/key2", "value": "content2", "description": "Second item", "embed": true}
+]
+EOF
+)"
 ```
-
-**get_memory** - batch read with `key_names` array:
-```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/ensue-api.sh get_memory '{"keys":["ns/key1","ns/key2","ns/key3"]}'
-```
-
-**delete_memory** - batch delete with `key_names` array:
-```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/ensue-api.sh delete_memory '{"keys":["ns/key1","ns/key2"]}'
-```
-
-Use batch calls whenever possible to minimize API roundtrips and save tokens.
 
 ## Context Optimization
 
