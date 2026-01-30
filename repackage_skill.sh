@@ -18,6 +18,16 @@ mkdir -p skills/ensue-memory/scripts
 cp scripts/ensue-api.sh skills/ensue-memory/scripts/ensue-api.sh
 chmod +x skills/ensue-memory/scripts/ensue-api.sh
 echo "Copied ensue-api.sh to skills/ensue-memory/scripts/ and set execute permissions"
+cp scripts/ensue-cli.py skills/ensue-memory/scripts/ensue-cli.py
+chmod +x skills/ensue-memory/scripts/ensue-cli.py
+
+# check file presence before copying, set a flag for a warning if key file is missing
+if [ ! -f ".ensue-key" ]; then
+    KEY_FILE_PRESENT=0
+else
+    cp .ensue-key skills/ensue-memory/.ensue-key
+    KEY_FILE_PRESENT=1
+fi
 
 echo ""
 echo "Creating zip archive..."
@@ -35,3 +45,6 @@ rmdir --ignore-fail-on-non-empty skills/ensue-memory/scripts 2>/dev/null || true
 echo ""
 echo "Repackaging complete!"
 echo "  Skill suitable for Claude Assistant @ $(pwd)/ensue-memory.zip"
+if [ "$KEY_FILE_PRESENT" = "0" ]; then
+    echo "No .ensue-key was packaged.  For the assistant, which has no env vars, this may prevent correct operation."
+fi
