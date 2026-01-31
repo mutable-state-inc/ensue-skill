@@ -121,9 +121,10 @@ Usage:
 ensue-cli.py <method> '<json_args>'
 ```
 
-Example:
+Examples:
 ```bash
 ensue-cli.py list_keys --limit 5
+ensue-cli.py get_memory --key-names '["a"]'
 ```
 
 ## Batch Operations
