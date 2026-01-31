@@ -113,13 +113,17 @@ Uses `$ENSUE_API_KEY` env var or .ensue-key file. If missing, user gets a key at
 
 Use the CLI to interact with the memory system. Set as executable before use. You can use `--help` to discover commands and usage for each command to get more details about how to use the CLI.  The CLI handles authentication and response parsing:
 
+Use the full path when calling the CLI. Discover it once `echo ${CLAUDE_PLUGIN_ROOT:-/mnt/skills/user/ensue-memory}/scripts/ensue-cli.py"`
+and make it executable.
+
+Usage:
 ```bash
-${CLAUDE_PLUGIN_ROOT:-.}/scripts/ensue-cli.py <method> '<json_args>'
+ensue-cli.py <method> '<json_args>'
 ```
 
 Example:
 ```bash
-${CLAUDE_PLUGIN_ROOT:-.}/scripts/ensue-cli.py list_keys '{"limit":5}'
+ensue-cli.py list_keys --limit 5
 ```
 
 ## Batch Operations
