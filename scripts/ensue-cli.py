@@ -236,8 +236,9 @@ def build_command(tool):
         }
         try:
             result = run_async(call_tool(url, token, tool["name"], args))
-        except McpError as e:
-            click.echo(f"Error: {e}", err=True)
+        except* McpError as eg:
+            for err in eg.exceptions:
+                click.echo(f"Error (from Ensue MCP server): {err}", err=True)
             sys.exit(1)
         print_result(result)
 
