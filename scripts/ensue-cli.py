@@ -170,24 +170,30 @@ def get_config():
             token = skill_key_file.read_text().strip()
 
     if not token:
-        console.print("[red]Error:[/red] ENSUE_API_KEY or ENSUE_TOKEN environment variable required, "
-                       "or place key in .ensue-key file")
+        click.echo("Error: ENSUE_API_KEY or ENSUE_TOKEN environment variable required, "
+                   "or place key in .ensue-key file", err=True)
         sys.exit(1)
 
     return url, token
 
 
-def print_result(result):
-    """Print MCP result with rich JSON formatting."""
+def print_result(result, use_rich=False):
+    """Print MCP result, optionally with rich JSON formatting."""
     if hasattr(result, "content"):
         for item in result.content:
             if hasattr(item, "text"):
-                try:
-                    console.print(JSON(item.text))
-                except Exception:
-                    console.print(item.text)
+                if use_rich:
+                    try:
+                        console.print(JSON(item.text))
+                    except Exception:
+                        console.print(item.text)
+                else:
+                    click.echo(item.text)
     else:
-        console.print(JSON(json.dumps(result, indent=2)))
+        if use_rich:
+            console.print(JSON(json.dumps(result, indent=2)))
+        else:
+            click.echo(json.dumps(result, indent=2))
 
 
 # ============================================================================
@@ -241,6 +247,7 @@ def build_command(tool):
 
     def callback(**kwargs):
         url, token = get_config()
+        use_rich = click.get_current_context().find_root().params.get("use_rich", False)
         args = {
             k.replace("-", "_"): parse_arg(v, props.get(k.replace("-", "_"), {}).get("type"))
             for k, v in kwargs.items()
@@ -255,7 +262,7 @@ def build_command(tool):
                     click.echo(f"Error (from Ensue MCP server): {err}", err=True)
                 sys.exit(1)
             raise
-        print_result(result)
+        print_result(result, use_rich=use_rich)
 
     return click.Command(
         name=tool["name"],
@@ -283,8 +290,8 @@ class MCPToolsCLI(click.Group):
         try:
             return sorted(self.tools.keys())
         except Exception as e:
-            console.print("[red]Connection error:[/red] Could not connect to MCP server")
-            console.print(f"[dim]{e}[/dim]")
+            click.echo("Connection error: Could not connect to MCP server", err=True)
+            click.echo(str(e), err=True)
             return []
 
     def get_command(self, ctx, name):
@@ -295,7 +302,8 @@ class MCPToolsCLI(click.Group):
 
 @click.group(cls=MCPToolsCLI)
 @click.version_option()
-def main():
+@click.option("--rich", "use_rich", is_flag=True, default=False, help="Enable rich terminal formatting.")
+def main(use_rich):
     """Ensue Memory CLI - A distributed memory network for AI agents.
 
     Commands are loaded dynamically from the MCP server.
